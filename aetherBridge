@@ -1,0 +1,17 @@
+// In your SketchScreen.tsx or FooterActions.tsx
+import { aetherBridge } from '../services/aetherBridge';
+
+const handleDeploy = async () => {
+  const success = await aetherBridge.deploy(code, "My Awesome Sketch");
+  if (success) {
+    setLastAction('Deployed to Aether 🚀');
+  }
+};
+
+// Then in JSX:
+<TouchableOpacity 
+  style={[styles.actionBtn, { backgroundColor: '#58a6ff' }]} 
+  onPress={handleDeploy}
+>
+  <Text style={{ color: '#fff', fontWeight: 'bold' }}>🚀 DEPLOY</Text>
+</TouchableOpacity>

@@ -1,0 +1,83 @@
+// src/components/Editor/CodeEditor.tsx
+import React, { useRef, useEffect, useState } from 'react';
+import { WebView } from 'react-native-webview';
+import { View, StyleSheet, Dimensions } from 'react-native';
+
+interface CodeEditorProps {
+  value: string;
+  onChange: (code: string) => void;
+  language?: string; // 'html', 'javascript', 'css', etc.
+}
+
+const htmlTemplate = (initialCode: string, lang: string) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-${lang}.min.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    body { margin:0; padding:10px; background:#1e1e1e; color:#ccc; font-family: monospace; }
+    pre { margin:0; }
+    code { font-size: 14px; line-height: 1.5; }
+    .editable { width:100%; min-height: 80vh; background:#252526; color:#d4d4d4; border:none; outline:none; font-family: monospace; font-size:14px; padding:10px; white-space: pre; overflow-wrap: normal; }
+  </style>
+</head>
+<body>
+  <pre><code id="code" class="language-\( {lang} editable" contenteditable="true"> \){initialCode.replace(/</g, '&lt;')}</code></pre>
+  
+  <script>
+    const codeEl = document.getElementById('code');
+    
+    function highlight() {
+      Prism.highlightElement(codeEl);
+    }
+    
+    codeEl.addEventListener('input', () => {
+      window.ReactNativeWebView.postMessage(codeEl.textContent || '');
+      // Re-highlight after short delay
+      setTimeout(highlight, 100);
+    });
+    
+    // Initial highlight
+    setTimeout(highlight, 50);
+  </script>
+</body>
+</html>`;
+
+export const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, language = 'html' }) => {
+  const webViewRef = useRef<WebView>(null);
+  const [currentCode, setCurrentCode] = useState(value);
+
+  useEffect(() => {
+    setCurrentCode(value);
+  }, [value]);
+
+  const handleMessage = (event: any) => {
+    const newCode = event.nativeEvent.data;
+    if (newCode !== currentCode) {
+      setCurrentCode(newCode);
+      onChange(newCode);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <WebView
+        ref={webViewRef}
+        originWhitelist={['*']}
+        source={{ html: htmlTemplate(currentCode, language) }}
+        onMessage={handleMessage}
+        style={styles.webview}
+        javaScriptEnabled={true}
+        domStorageEnabled={true}
+      />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#1e1e1e' },
+  webview: { flex: 1 },
+});
